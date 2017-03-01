@@ -1,0 +1,39 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+    <title>第一个网页</title>
+    <style type="text/css">
+        input{
+            color:red;
+            background-color:yellow;
+
+        }
+    </style>
+
+    <script type="text/javascript">
+        function myfun() {
+
+            var a = text1.value;
+            alert(a);
+            window.document.bgColor = "black";
+            window.document.title = "点击之后";
+            $("button1").style.backgroundColor = "white";
+            $("text1").value = "222"
+        }
+        function $(id) {
+            return window.document.getElementById(id);
+        }
+
+    </script>
+</head>
+<!--注释-->
+
+<body>
+    哈哈哈哈
+    <input id="text1" type="text" />
+    <input id="button1" type="button" value="button" style="color:green;" onclick="myfun();"/>
+    <img src="W020160727514974237097.jpg" alt="lalal" />
+</body>
+</html>
+
