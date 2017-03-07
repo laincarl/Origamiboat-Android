@@ -39,6 +39,7 @@ public class LoginActivity extends Activity {
         final EditText pwd_view = (EditText) findViewById(R.id.PswdText);
         Button login = (Button) findViewById(R.id.button_login);
         TextView see = (TextView) findViewById(R.id.button_see);
+        TextView register=(TextView)findViewById(R.id.button_register);
         map = service.getSharePreference("login");//提取数据，第一次进来的时候要读文件
 
        //login按钮监听
@@ -119,6 +120,16 @@ public class LoginActivity extends Activity {
 
         }
 
+        //register按钮监听
+        register.setOnClickListener(new View.OnClickListener(){
+
+            public void onClick(View v) {
+                Intent intent = new Intent();
+                intent.setClass(LoginActivity.this, RegisterActivity.class);
+                startActivity(intent);
+
+        }
+        });
 
 
 
@@ -127,7 +138,6 @@ public class LoginActivity extends Activity {
             public void onClick(View v){
                 Intent intent = new Intent();
                 intent.setClass(LoginActivity.this, MainActivity.class);
-
                 startActivity(intent);
 
             }

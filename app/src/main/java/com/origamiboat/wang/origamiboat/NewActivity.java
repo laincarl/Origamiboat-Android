@@ -134,6 +134,7 @@ public class NewActivity extends Activity {
                 Toast.makeText(NewActivity.this,
                         contentRichEditText.getText().toString(),
                         Toast.LENGTH_SHORT).show();
+                //添加
             }
         });
         galleryImg.setOnClickListener(new View.OnClickListener() {
