@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Environment;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -17,6 +18,7 @@ import android.webkit.WebViewClient;
 
 import com.origamiboat.wang.origamiboat.ImageActivity;
 import com.origamiboat.wang.origamiboat.R;
+import com.origamiboat.wang.origamiboat.common.ServerWebRoot;
 
 /**
  * Created by wang on 2016/9/13 0013.
@@ -57,8 +59,8 @@ public class DetailsActivity extends Activity {
         mWebView.setWebChromeClient(new MyWebChromeClient());
         //添加监听
         mWebView.addJavascriptInterface(javascriptInterface, "imagelistner");
-        mWebView.loadUrl("file:///android_asset/xx.html");
-       // mWebView.loadUrl("http://192.168.43.244:8080/OrigamiBoatServer/upload/xx.html");
+        //mWebView.loadUrl(Environment.getExternalStorageDirectory() + "/"+"share.html");
+        mWebView.loadUrl(ServerWebRoot.getServerWebRoot()+"artical/admin.html");
 
     }
 

@@ -73,14 +73,14 @@ public class Fragment3 extends android.support.v4.app.Fragment {
                 .cacheInMemory(true).cacheOnDisk(true).considerExifParams(true)
 
                 .bitmapConfig(Bitmap.Config.RGB_565).displayer(new FadeInBitmapDisplayer(388)).build();
-        String url = ServerWebRoot.getServerWebRoot()+"upload/PHOTOIMAGE_ANSWER.jpg";
+        String url = ServerWebRoot.getServerWebRoot()+"pic/PHOTOIMAGE_ANSWER.jpg";
         imageLoader.displayImage(url, head_pic, options);
         return view;
 
     }
 @Override
     public void  onResume(){
-    String url = ServerWebRoot.getServerWebRoot()+"upload/PHOTOIMAGE_ANSWER.jpg";
+    String url = ServerWebRoot.getServerWebRoot()+"pic/PHOTOIMAGE_ANSWER.jpg";
     imageLoader.displayImage(url, head_pic, options);
     super.onResume();
 }

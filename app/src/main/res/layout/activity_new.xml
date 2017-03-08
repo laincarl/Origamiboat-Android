@@ -6,10 +6,10 @@
     android:orientation="vertical" >
     <TextView
         android:layout_width="match_parent"
-        android:layout_height="50dp"
+        android:layout_height="60dp"
         android:text="新建"
         android:paddingLeft="10dp"
-        android:paddingTop="15dp"
+        android:paddingTop="25dp"
 
         android:textColor="@color/white_pure"
         android:textSize="18sp"

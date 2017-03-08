@@ -111,7 +111,7 @@ public class AccountActivity extends Activity {
                 .cacheInMemory(true).cacheOnDisk(true).considerExifParams(true)
 
                 .bitmapConfig(Bitmap.Config.RGB_565).displayer(new FadeInBitmapDisplayer(388)).build();
-        String url = ServerWebRoot.getServerWebRoot()+"upload/PHOTOIMAGE_ANSWER.jpg";
+        String url = ServerWebRoot.getServerWebRoot()+"pic/PHOTOIMAGE_ANSWER.jpg";
         imageLoader.displayImage(url, faceImage, options);
     }
     /**
@@ -164,7 +164,7 @@ public class AccountActivity extends Activity {
     //从服务器获取头像
     private void getPicFromHttp() {
 
-        String url = ServerWebRoot.getServerWebRoot()+"upload/PHOTOIMAGE_ANSWER.jpg";
+        String url = ServerWebRoot.getServerWebRoot()+"pic/PHOTOIMAGE_ANSWER.jpg";
         imageLoader.displayImage(url, faceImage, options);
         //得到可用的图片
         /*Bitmap bitmap = getHttpBitmap(url);
