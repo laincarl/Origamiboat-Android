@@ -1,9 +1,10 @@
 package com.origamiboat.wang.origamiboat;
 
-import android.annotation.SuppressLint;
+import android.Manifest;
 import android.app.Activity;
-import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Color;
@@ -11,294 +12,266 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Message;
 import android.provider.MediaStore;
-import android.util.DisplayMetrics;
-import android.view.KeyEvent;
+import android.support.annotation.RequiresApi;
+import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AlertDialog;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
-import android.view.Window;
-import android.view.WindowManager;
-import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.loopj.android.http.AsyncHttpClient;
 import com.loopj.android.http.AsyncHttpResponseHandler;
 import com.loopj.android.http.RequestParams;
-import com.nostra13.universalimageloader.cache.disc.naming.Md5FileNameGenerator;
 import com.nostra13.universalimageloader.core.ImageLoader;
-import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
-import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
 import com.origamiboat.wang.origamiboat.common.ServerWebRoot;
 import com.origamiboat.wang.origamiboat.data_storage.LoginService;
-import com.origamiboat.wang.origamiboat.utils.richtext.ResizeLinearLayout;
-import com.origamiboat.wang.origamiboat.utils.richtext.RichEditText;
+import com.origamiboat.wang.origamiboat.utils.richtext.RichEditor;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.lang.reflect.Field;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-/**
- * Created by wang on 2016/7/26 0026.
- */
 public class NewActivity extends Activity {
-
-    private ResizeLinearLayout baseContent;
-
-    private EditText articleTitle;
-
-    private RichEditText contentRichEditText;
-
-    private TextView completeImg;
-
-    private ImageView galleryImg;
-
-
-    private int appHeight;
-    private int baseLayoutHeight;
-
-    private int currentStatus;
-    private static final int SHOW_TOOLS = 1;
-    private static final int SHOW_KEY_BOARD = 2;
-    private static final int RESIZE_LAYOUT = 1;
-    private  static String user_artical;
-    private boolean flag = false; // 控制何时显示下方tools
+    final private int REQUEST_CODE_ASK_PERMISSIONS = 123;
+    private RichEditor mEditor;
+    private TextView mPreview;
+    EditText articleTitle;
+    String titlestr = "";
+    String date_str = "";
+    String filerootdir = Environment.getExternalStorageDirectory() + "/Origamiboat/";
+    private static final String UPLOAD_URL = ServerWebRoot.getServerWebRoot() + "UploadArtical";
+    private static String user_artical;
     private LoginService service_new;
     Map<String, ?> map_new = null;
-    private InputHandler inputHandler = new InputHandler();
-    private static final String UPLOAD_URL = ServerWebRoot.getServerWebRoot() + "UploadArtical";
-
-    private class InputHandler extends Handler {
-        @Override
-        public void handleMessage(Message msg) {
-            // TODO Auto-generated method stub
-            switch (msg.what) {
-                case RESIZE_LAYOUT:
-                    if (msg.arg1 == SHOW_TOOLS) {
-                        currentStatus = SHOW_TOOLS;
-                    } else {
-                        currentStatus = SHOW_KEY_BOARD;
-                        baseLayoutHeight = baseContent.getHeight();
-                    }
-                    break;
-
-                default:
-                    break;
-            }
-            super.handleMessage(msg);
-        }
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        service_new = new LoginService(this);
-        getWindow().requestFeature(Window.FEATURE_NO_TITLE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            Window window = getWindow();
-            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS
-                    | WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
-            window.getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
-                    | View.SYSTEM_UI_FLAG_LAYOUT_STABLE);
-            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            window.setStatusBarColor(Color.TRANSPARENT);
-            window.setNavigationBarColor(Color.TRANSPARENT);
-        }
         setContentView(R.layout.activity_new);
+        service_new = new LoginService(this);
+        //提取用户数据
         map_new = service_new.getSharePreference("login");//提取用户数据
         if (map_new != null && !map_new.isEmpty()) {
-            user_artical=map_new.get("username").toString();
+            user_artical = map_new.get("username").toString();
 
         }
-        //
-        baseContent = (ResizeLinearLayout) findViewById(R.id.editor_base_content);
+        articleTitle = (EditText) findViewById(R.id.articleTitle);
+        mEditor = (RichEditor) findViewById(R.id.editor);
+        mEditor.setEditorHeight(200);
+        mEditor.setEditorFontSize(22);
+        mEditor.setEditorFontColor(Color.BLACK);
+        //mEditor.setEditorBackgroundColor(Color.BLUE);
+        //mEditor.setBackgroundColor(Color.BLUE);
+        //mEditor.setBackgroundResource(R.drawable.bg);
+        mEditor.setPadding(10, 10, 10, 10);
+        //    mEditor.setBackground("https://raw.githubusercontent.com/wasabeef/art/master/chip.jpg");
+        mEditor.setPlaceholder("Insert text here...");
 
-        completeImg = (TextView) findViewById(R.id.editor_edit_complete);
-        galleryImg = (ImageView) findViewById(R.id.editor_gallery_img);
-
-        articleTitle = (EditText) findViewById(R.id.editor_article_title);
-        contentRichEditText = (RichEditText) findViewById(R.id.editor_edit_area);
-
-        appHeight = getAppHeight();
-        initImageLoader(this);
-        init();
-    }
-
-    //处理后退键的情况
-    @Override
-    public boolean onKeyDown(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_BACK) {
-
-            this.finish();  //finish当前activity
-            overridePendingTransition(0, R.anim.slide_out);
-            return true;
-        }
-        return super.onKeyDown(keyCode, event);
-    }
-
-    private void init() {
-        baseContent.setOnResizeListener(new ResizeLinearLayout.OnResizeListener() {
+        mPreview = (TextView) findViewById(R.id.preview);
+        mEditor.setOnTextChangeListener(new RichEditor.OnTextChangeListener() {
             @Override
-            public void OnResize(int w, int h, int oldw, int oldh) {
-                // TODO Auto-generated method stub
-                int selector = SHOW_TOOLS;
-                if (h < oldh) {
-                    selector = SHOW_KEY_BOARD;
-                }
-                Message msg = new Message();
-                msg.what = 1;
-                msg.arg1 = selector;
-                inputHandler.sendMessage(msg);
+            public void onTextChange(String text) {
+                mPreview.setText(text);
             }
         });
 
-// 完成
-        completeImg.setOnClickListener(new View.OnClickListener() {
-
+        findViewById(R.id.action_undo).setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View arg0) {
-                String titlestr = articleTitle.getText().toString();
-                String areastr = contentRichEditText.getText().toString();
-                String areastrsub = "";
-                String imgPath = "";
+            public void onClick(View v) {
+                mEditor.undo();
+            }
+        });
 
-                int areaIndex = areastr.indexOf("<");
-                int beginIndex = areastr.indexOf("=");
-                int endIndex = areastr.lastIndexOf("\"");
-                imgPath = areastr.substring(beginIndex + 2, endIndex);
-                areastrsub = areastr.substring(0, areaIndex);
+        findViewById(R.id.action_redo).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mEditor.redo();
+            }
+        });
 
-                SimpleDateFormat sDateFormat = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");
-                String date_str = sDateFormat.format(new java.util.Date());
+        findViewById(R.id.action_bold).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mEditor.setBold();
+            }
+        });
 
-                        //创建图片的一个文件
-                File imgfile = new File(imgPath);
-                imgfile.renameTo(new File(Environment.getExternalStorageDirectory() + "/" +user_artical+"_"+date_str+".jpg"));
+        findViewById(R.id.action_italic).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mEditor.setItalic();
+            }
+        });
 
-                String start = "<!DOCTYPE HTML>\n" +
-                        "<html>\n" +
-                        "<head>\n" +
-                        "\t<meta charset = \"utf-8\">\n" +
-                        "\t<title>NewFile</title>" +
-                        "</head>\n" +
-                        "<body>\n";
-                String end = "</body>\n" +
-                        "</html>";
-                String total = start + titlestr + "\n<img src=\"" + user_artical+"_"+date_str+".jpg" + "\"/>\n" + end;
 
-                //创建新的的分享文件
-                File shareFile = new File(Environment.getExternalStorageDirectory() + "/" + user_artical+"_"+date_str+".html");
-                if (!shareFile.exists()) {
-                    try {
-                        shareFile.createNewFile();
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
+        findViewById(R.id.action_underline).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mEditor.setUnderline();
+            }
+        });
+
+        findViewById(R.id.action_heading1).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mEditor.setHeading(1);
+            }
+        });
+
+        findViewById(R.id.action_heading2).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mEditor.setHeading(2);
+            }
+        });
+
+        findViewById(R.id.action_heading3).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mEditor.setHeading(3);
+            }
+        });
+
+        findViewById(R.id.action_heading4).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mEditor.setHeading(4);
+            }
+        });
+
+        findViewById(R.id.action_heading5).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mEditor.setHeading(5);
+            }
+        });
+
+        findViewById(R.id.action_heading6).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mEditor.setHeading(6);
+            }
+        });
+
+        findViewById(R.id.action_indent).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mEditor.setIndent();
+            }
+        });
+
+        findViewById(R.id.action_outdent).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mEditor.setOutdent();
+            }
+        });
+
+        findViewById(R.id.action_align_left).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mEditor.setAlignLeft();
+            }
+        });
+
+        findViewById(R.id.action_align_center).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mEditor.setAlignCenter();
+            }
+        });
+
+        findViewById(R.id.action_align_right).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mEditor.setAlignRight();
+            }
+        });
+
+        findViewById(R.id.action_insert_bullets).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mEditor.setBullets();
+            }
+        });
+
+        findViewById(R.id.action_insert_numbers).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mEditor.setNumbers();
+            }
+        });
+
+        findViewById(R.id.action_insert_image).setOnClickListener(new View.OnClickListener() {
+            @RequiresApi(api = Build.VERSION_CODES.M)
+            @Override
+            public void onClick(View v) {
+                //mEditor.insertImage("file:///android_asset/ic3.png","dachshund");
+                //权限申请
+                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                        requestPermissions(
+                                new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CODE_ASK_PERMISSIONS);
+                    } else {
+                        gallery();
                     }
                 }
-
-                byte bytes[] = new byte[4096];
-                bytes = total.getBytes();
-                int b = total.length();
-                try {
-                    FileOutputStream fos = new FileOutputStream(shareFile);
-                    fos.write(bytes, 0, b);
-                    fos.close();
-                } catch (Exception ex) {
-                    ex.printStackTrace();
+                else {
+                    gallery();
                 }
-                //上传html
-                uploadFile(Environment.getExternalStorageDirectory() + "/" +  user_artical+"_"+date_str+".html");
-                //上传图片文件
-                uploadFile(Environment.getExternalStorageDirectory() + "/" +user_artical+"_"+date_str+".jpg");
-
-                //测试显示文本了内容
-                //Toast.makeText(NewActivity.this, titlestr, Toast.LENGTH_SHORT).show();
-                //Toast.makeText(NewActivity.this, imgPath, Toast.LENGTH_SHORT).show();
-                Toast.makeText(NewActivity.this, date_str, Toast.LENGTH_SHORT).show();
-                //Toast.makeText(NewActivity.this, areastrsub, Toast.LENGTH_SHORT).show();
-
-
-
-
             }
         });
-        galleryImg.setOnClickListener(new View.OnClickListener() {
+        //完成按钮点击事件
+        findViewById(R.id.btn_done).setOnClickListener(new View.OnClickListener() {
 
             @Override
-            public void onClick(View arg0) {
-                // TODO Auto-generated method stub
-                gallery();
+            public void onClick(View v) {
+                //Toast.makeText(NewActivity.this, mPreview.getText(), Toast.LENGTH_LONG).show();
+
+                titlestr = articleTitle.getText().toString();
+                if (!articleTitle.getText().toString().trim().equals("")) {
+                    String areastr = mPreview.getText().toString();
+                    SimpleDateFormat sDateFormat = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");
+                    date_str = sDateFormat.format(new java.util.Date());
+                    String done = replaceImgSrc(areastr);
+                    Toast.makeText(NewActivity.this, done, Toast.LENGTH_LONG).show();
+                    String start="<!DOCTYPE html>\n" +
+                            "<html>\n" +
+                            "<head>\n" +
+                            "<meta charset=\"utf-8\">\n" +
+                            "\t<title></title>\n" +
+                            "</head>\n" +
+                            "<body>";
+                    String end="\n</body>\n" +
+                            "</html>";
+                    done=start+done+end;
+                    //Toast.makeText(NewActivity.this,done, Toast.LENGTH_SHORT).show();
+                    saveFile(done,user_artical + "_" + titlestr + "_" + date_str + ".html");
+                    //上传html
+                    uploadFile(filerootdir+user_artical + "_" + titlestr + "_" + date_str + ".html");
+
+                } else {
+                    Toast.makeText(NewActivity.this, "请输入标题", Toast.LENGTH_SHORT).show();
+                }
             }
         });
-    }
 
-    /**
-     * 获取应用显示区域高度。。。 PS:该方法放到工具类使用会报NPE ，怀疑是没有传入activity所致，没有深究
-     *
-     * @return
-     */
-    public int getAppHeight() {
-        /**
-         * 获取屏幕物理尺寸高(单位：px)
-         */
-        DisplayMetrics ds = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(ds);
 
-        /**
-         * 获取设备状态栏高度
-         */
-        Class<?> c = null;
-        Object obj = null;
-        Field field = null;
-        int x = 0, top = 0;
-        try {
-            c = Class.forName("com.android.internal.R$dimen");
-            obj = c.newInstance();
-            field = c.getField("status_bar_height");
-            x = Integer.parseInt(field.get(obj).toString());
-            top = getResources().getDimensionPixelSize(x);
-        } catch (Exception e1) {
-            e1.printStackTrace();
-        }
-
-        /**
-         * 屏幕高度减去状态栏高度即为应用显示区域高度
-         */
-        return ds.heightPixels - top;
-    }
-
-    /**
-     * 系统软键盘与工具栏的切换显示
-     */
-    private void showTools(int id) {
-        if (id == R.id.editor_gallery_img) {
-            flag = false;
-            // if (currentStatus == SHOW_TOOLS &&
-            // contentRichEditText.hasFocus()) {
-            if (currentStatus == SHOW_TOOLS) {
-                showSoftKeyBoard();
-            }
-        } else {
-            flag = true;
-            if (currentStatus == SHOW_KEY_BOARD) {
-                showSoftKeyBoard();
-            }
-        }
-    }
-
-    /**
-     * 反复切换系统软键盘
-     */
-    private void showSoftKeyBoard() {
-        InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-        imm.toggleSoftInput(0, InputMethodManager.HIDE_NOT_ALWAYS);
     }
 
     /**
@@ -321,23 +294,24 @@ public class NewActivity extends Activity {
         super.onActivityResult(requestCode, resultCode, data);
         if (resultCode == RESULT_OK) {
             switch (requestCode) {
+
+
                 case 1001: {
-                    // 添加图片
-                    Bitmap originalBitmap = null;
-                    Uri originalUri = data.getData();
-                    // try {
-                    // originalBitmap = BitmapFactory.decodeStream(resolver
-                    // .openInputStream(originalUri));
-                    // originalBitmap =
-                    // ImageUtils.loadImage(resolver.openInputStream(originalUri));
-                    originalBitmap = ImageLoader.getInstance().loadImageSync(
-                            originalUri.toString());
-                    if (originalBitmap != null) {
-                        contentRichEditText.addImage(originalBitmap,
-                                getAbsoluteImagePath(originalUri));
-                    } else {
-                        Toast.makeText(this, "获取图片失败", Toast.LENGTH_LONG).show();
-                    }
+                    Uri originalUri = data.getData();        //获得图片的uri
+                    //bm = MediaStore.Images.Media.getBitmap(resolver, originalUri);        //显得到bitmap图片
+                    //这里开始的第二部分，获取图片的路径：
+                    String[] proj = {MediaStore.Images.Media.DATA};
+                    //好像是Android多媒体数据库的封装接口，具体的看Android文档
+                    Cursor cursor = managedQuery(originalUri, proj, null, null, null);
+                    //按我个人理解 这个是获得用户选择的图片的索引值
+                    int column_index = cursor.getColumnIndexOrThrow(MediaStore.Images.Media.DATA);
+                    //将光标移至开头 ，这个很重要，不小心很容易引起越界
+                    cursor.moveToFirst();
+                    //最后根据索引值获取图片路径
+                    String path = cursor.getString(column_index);
+                    //Toast.makeText(NewActivity.this, Environment.getExternalStorageDirectory() + path, Toast.LENGTH_LONG).show();
+                    mEditor.insertImage(path, "dachshund");
+
                     //
                     // } catch (FileNotFoundException e) {
                     // // TODO Auto-generated catch block
@@ -374,26 +348,6 @@ public class NewActivity extends Activity {
         return cursor.getString(column_index);
     }
 
-    public void initImageLoader(Context context) {
-        // This configuration tuning is custom. You can tune every option, you
-        // may tune some of them,
-        // or you can create default configuration by
-        // ImageLoaderConfiguration.createDefault(this);
-        // method.
-        ImageLoaderConfiguration.Builder config = new ImageLoaderConfiguration.Builder(
-                context);
-        config.threadPriority(Thread.NORM_PRIORITY - 2);
-        config.denyCacheImageMultipleSizesInMemory();
-        config.diskCacheFileNameGenerator(new Md5FileNameGenerator());
-        config.diskCacheSize(50 * 1024 * 1024); // 50 MiB
-        config.tasksProcessingOrder(QueueProcessingType.LIFO);
-        config.writeDebugLogs(); // Remove for release app
-
-        // Initialize ImageLoader with configuration.
-        ImageLoader.getInstance().init(config.build());
-
-    }
-
     public void uploadFile(String imgPathStr) {
         // 手机端要上传的文件的路径
         String filePath = imgPathStr;
@@ -415,7 +369,7 @@ public class NewActivity extends Activity {
                 public void onSuccess(String arg0) {
                     super.onSuccess(arg0);
                     if (arg0.equals("success")) {
-                        Toast.makeText(NewActivity.this, "上传成功！", Toast.LENGTH_LONG).show();
+                        //Toast.makeText(NewActivity.this, "上传成功！", Toast.LENGTH_LONG).show();
                     }
                 }
 
@@ -432,4 +386,152 @@ public class NewActivity extends Activity {
         }
     }
 
+    public void onRequestPermissionsResult(int requestCode,
+                                           String permissions[], int[] grantResults) {
+        switch (requestCode) {
+            case REQUEST_CODE_ASK_PERMISSIONS:
+                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    // Permission Granted
+                    //Toast.makeText(NewActivity.this,"权限申请成功", Toast.LENGTH_LONG).show();
+                    gallery();
+                } else {
+                    // Permission Denied
+                    Toast.makeText(NewActivity.this, "权限申请失败", Toast.LENGTH_LONG).show();
+                }
+                break;
+            default:
+                super.onRequestPermissionsResult(requestCode, permissions,
+                        grantResults);
+        }
+    }
+
+    private void showMessage(String message,
+                             DialogInterface.OnClickListener okListener) {
+        new AlertDialog.Builder(NewActivity.this).setMessage(message)
+                .setPositiveButton("OK", okListener).create().show();
+    }
+
+    /**
+     * 替换内容中存在的img标签中的src值
+     *
+     * @param content
+     * @return
+     */
+    public String replaceImgSrc(String content) {
+
+        int k = 1;
+        StringBuffer sb = new StringBuffer();
+//目前img标签标示有3种表达式
+//<img alt=""src="1.jpg"/> <img alt=""src="1.jpg"></img><img alt=""src="1.jpg">
+//开始匹配content中的<img />标签
+        Pattern p_img = Pattern.compile("<(img|IMG)(.*?)(/>|></img>|>)");
+        Matcher m_img = p_img.matcher(content);
+        boolean result_img = m_img.find();
+        if (result_img) {
+            while (result_img) {
+                StringBuffer sbSrc = new StringBuffer();
+                //获取到匹配的<img />标签中的内容
+                String str_img = m_img.group(2);
+                //System.out.println(str_img);
+                //开始匹配<img />标签中的src
+                Pattern p_src = Pattern.compile("(src|SRC)=(\"|')(.*?)(\"|')");
+                Matcher m_src = p_src.matcher(str_img);
+                if (m_src.find()) {
+                    //取得图片的src值
+                    String str_src = m_src.group(3);
+                    //复制图片的一个文件
+                    copyFile(str_src, filerootdir + user_artical + "_" + titlestr + "_" + date_str + "_" + k + ".jpg");
+                    //上传图片文件
+                    uploadFile(filerootdir + user_artical + "_" + titlestr + "_" + date_str + "_" + k + ".jpg");
+
+                    //System.out.println(str_src);
+                    //开始替换图片src
+                    m_src.appendReplacement(sbSrc, "src=\"" + user_artical + "_" + titlestr + "_" + date_str + "_" + k + ".jpg\"");
+
+                    m_src.appendTail(sbSrc);
+                    m_img.appendReplacement(sb, "<img" + sbSrc.toString() + "/>");
+                    k++;
+                }
+
+                //结束匹配<img />标签中的src
+                //匹配content中是否存在下一个<img />标签，有则继续以上步骤匹配<img />标签中的src
+                result_img = m_img.find();
+
+            }
+            m_img.appendTail(sb);
+            return sb.toString();
+        } else {
+            return content;
+        }
+
+
+    }
+
+    /**
+     * 复制单个文件
+     *
+     * @param oldPath String 原文件路径 如：c:/fqf.txt
+     * @param newPath String 复制后路径 如：f:/fqf.txt
+     * @return boolean
+     */
+    public void copyFile(String oldPath, String newPath) {
+        try {
+            int bytesum = 0;
+            int byteread = 0;
+            File oldfile = new File(oldPath);
+            if (oldfile.exists()) { //文件存在时
+                //创建文件夹
+                File cacheDir = new File(filerootdir);//设置目录参数
+                cacheDir.mkdirs();//新建目录
+                //复制图片
+                InputStream inStream = new FileInputStream(oldPath); //读入原文件
+                FileOutputStream fs = new FileOutputStream(newPath);
+                byte[] buffer = new byte[4096];
+                int length;
+                while ((byteread = inStream.read(buffer)) != -1) {
+                    bytesum += byteread; //字节数 文件大小
+                    System.out.println(bytesum);
+                    fs.write(buffer, 0, byteread);
+                }
+                inStream.close();
+
+            }
+        } catch (Exception e) {
+            System.out.println("复制单个文件操作出错");
+            e.printStackTrace();
+
+        }
+
+    }
+
+    //写文件
+    public void saveFile(String str,String filename) {
+        String filePath = null;
+
+        filePath = filerootdir+filename;
+        try {
+            File file = new File(filePath);
+            if (!file.exists()) {
+                File dir = new File(file.getParent());
+                dir.mkdirs();
+                file.createNewFile();
+            }
+
+
+           /* FileWriter fw = new FileWriter(filename);
+
+            PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename),"utf-8")));
+            out.write(str);
+            out.flush();
+            out.close();*/
+
+            FileOutputStream outStream = new FileOutputStream(file);
+
+            outStream.write(str.getBytes());
+            outStream.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+    }
 }

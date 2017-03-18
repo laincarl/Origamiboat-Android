@@ -1,11 +1,15 @@
 package com.origamiboat.wang.origamiboat;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 
 import android.app.AlertDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -36,6 +40,7 @@ import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.display.FadeInBitmapDisplayer;
 import com.origamiboat.wang.origamiboat.common.ServerWebRoot;
+import com.origamiboat.wang.origamiboat.data_storage.LoginService;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -44,12 +49,14 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.Map;
 
 /**
  * Created by wang on 2016/8/22 0022.
  */
 public class AccountActivity extends Activity {
     /* 组件 */
+    final private int REQUEST_CODE_ASK_PERMISSIONS = 123;
     protected static final int CHOOSE_PICTURE = 1;
     protected static final int TAKE_PICTURE = 0;
     private ImageView faceImage;
@@ -61,15 +68,24 @@ public class AccountActivity extends Activity {
     private static final int PHOTO_REQUEST = 1;
     private static final int CAMERA_REQUEST = 2;
     private static final int PHOTO_CLIP = 3;
-
+    private static String user_artical;
+    private LoginService service_new;
+    Map<String, ?> map_new = null;
     /* 头像名称 */
-    private static final String PHOTO_FILE_NAME = "PHOTOIMAGE_ANSWER.jpg";
     private static final String UPLOAD_URL = ServerWebRoot.getServerWebRoot()+"UploadFileServlet";
     //private static final String UPLOAD_URL = "http://192.168.0.104:8080/UploadFileServer/UploadFileServlet";
     @SuppressLint("InlinedApi")
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        service_new = new LoginService(this);
+        //提取用户数据
+        map_new = service_new.getSharePreference("login");//提取用户数据
+        if (map_new != null && !map_new.isEmpty()) {
+            user_artical = map_new.get("username").toString();
+
+        }
+
         getWindow().requestFeature(Window.FEATURE_NO_TITLE);
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             Window window = getWindow();
@@ -83,6 +99,7 @@ public class AccountActivity extends Activity {
             window.setNavigationBarColor(Color.TRANSPARENT);
         }
         setContentView(R.layout.activity_account);
+
         faceImage = (ImageView) findViewById(R.id.iv_personal_icon);
 
         button_changepic=(LinearLayout)findViewById(R.id.button_changepic);
@@ -92,17 +109,41 @@ public class AccountActivity extends Activity {
 
             @Override
             public void onClick(View v) {
-                showChoosePicDialog();
+                //权限申请
+                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
+                if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    requestPermissions(
+                            new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CODE_ASK_PERMISSIONS);
+
+                } else {
+                    showChoosePicDialog();
+                }
+
+            }
+            else{
+                    showChoosePicDialog();
+                }}
+        });
+        findViewById(R.id.exit_login).setOnClickListener(new View.OnClickListener() {
+
+            @Override
+            public void onClick(View v) {
+
+                SharedPreferences sp_user = getSharedPreferences("sp_user", Context.MODE_PRIVATE);
+                sp_user.edit().remove("login");
+
+                sp_user.edit().commit();
+
+
             }
         });
+    //创建默认的ImageLoader配置参数
 
-        //创建默认的ImageLoader配置参数
-
-        imageLoader = ImageLoader.getInstance();
+    imageLoader = ImageLoader.getInstance();
 //
-        options = new DisplayImageOptions.Builder()
+    options = new DisplayImageOptions.Builder()
 
-                .showImageOnLoading(null)//加载过程中显示的图片
+            .showImageOnLoading(null)//加载过程中显示的图片
 
                 .showImageForEmptyUri(null)//加载内容为空显示的图片
 
@@ -111,9 +152,9 @@ public class AccountActivity extends Activity {
                 .cacheInMemory(true).cacheOnDisk(true).considerExifParams(true)
 
                 .bitmapConfig(Bitmap.Config.RGB_565).displayer(new FadeInBitmapDisplayer(388)).build();
-        String url = ServerWebRoot.getServerWebRoot()+"pic/PHOTOIMAGE_ANSWER.jpg";
+    String url = ServerWebRoot.getServerWebRoot()+"pic/"+user_artical+".jpg";
         imageLoader.displayImage(url, faceImage, options);
-    }
+}
     /**
      * 显示修改头像的对话框
      */
@@ -155,7 +196,7 @@ public class AccountActivity extends Activity {
     private void getPicFromCamera() {
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         // 下面这句指定调用相机拍照后的照片存储的路径
-        intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(Environment.getExternalStorageDirectory(), PHOTO_FILE_NAME)));
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(Environment.getExternalStorageDirectory(), user_artical+".jpg")));
         startActivityForResult(intent, CAMERA_REQUEST);
         ImageLoader.getInstance().clearMemoryCache();//清除内存
         ImageLoader.getInstance().clearDiskCache();//清除sd卡
@@ -164,7 +205,7 @@ public class AccountActivity extends Activity {
     //从服务器获取头像
     private void getPicFromHttp() {
 
-        String url = ServerWebRoot.getServerWebRoot()+"pic/PHOTOIMAGE_ANSWER.jpg";
+        String url = ServerWebRoot.getServerWebRoot()+"pic/"+user_artical+".jpg";
         imageLoader.displayImage(url, faceImage, options);
         //得到可用的图片
         /*Bitmap bitmap = getHttpBitmap(url);
@@ -181,7 +222,7 @@ public class AccountActivity extends Activity {
             case CAMERA_REQUEST:
                 switch (resultCode) {
                     case -1:// -1表示拍照成功
-                        File file = new File(Environment.getExternalStorageDirectory() + "/" + PHOTO_FILE_NAME);
+                        File file = new File(Environment.getExternalStorageDirectory() + "/" + user_artical+".jpg");
                         if (file.exists()) {
                             photoClip(Uri.fromFile(file));
                         }
@@ -209,7 +250,7 @@ public class AccountActivity extends Activity {
                         int quality = 100;
                         OutputStream stream = null;
                         try {
-                            stream = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + PHOTO_FILE_NAME);
+                            stream = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + user_artical+".jpg");
                         } catch (FileNotFoundException e) {
                             // TODO Auto-generated catch block
                             e.printStackTrace();
@@ -296,7 +337,7 @@ public class AccountActivity extends Activity {
 
     public void uploadFile() {
         // 手机端要上传的文件的路径
-        String filePath = Environment.getExternalStorageDirectory() + "/" + PHOTO_FILE_NAME;
+        String filePath = Environment.getExternalStorageDirectory() + "/" + user_artical+".jpg";
 
         AsyncHttpClient httpClient = new AsyncHttpClient();
 

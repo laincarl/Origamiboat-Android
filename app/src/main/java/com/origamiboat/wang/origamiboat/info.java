@@ -7,7 +7,8 @@ package com.origamiboat.wang.origamiboat;
 public class info {
     private int id; //信息ID
     private String title;   //信息标题
-    private String total; //详细信息
+    private String time; //时间
+    private String link; //详细信息
     private int avatar; //图片ID
     private  String num;
 
@@ -27,12 +28,19 @@ public class info {
         return title;
     }
 
-    //详细信息
-    public void setTotal(String info) {
-        this.total = info;
+    //时间
+    public void setTime(String info) {
+        this.time = info;
     }
-    public String getTotal() {
-        return total;
+    public String getTime() {
+        return time;
+    }
+    //链接
+    public void setLink(String info) {
+        this.link = info;
+    }
+    public String getLink() {
+        return link;
     }
 
     public void setNum(String info) {

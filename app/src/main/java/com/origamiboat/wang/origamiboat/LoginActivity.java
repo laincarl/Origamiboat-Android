@@ -71,20 +71,21 @@ public class LoginActivity extends Activity {
                                     Gson g =new Gson();
                                     ResponseJson jsonObj = g.fromJson(json, ResponseJson.class);
                                     if(jsonObj.status==200){
-                                        SharedPreferences sp_user = getSharedPreferences("sp_user", Context.MODE_PRIVATE);
+                                        /*SharedPreferences sp_user = getSharedPreferences("sp_user", Context.MODE_PRIVATE);
                                         SharedPreferences.Editor sp_editor = sp_user.edit();
                                         sp_editor.putInt("UserID", jsonObj.userid);
                                         sp_editor.putString("UserName", username);
 
-                                        sp_editor.commit();
+
+                                        sp_editor.commit();*/
                                         Toast.makeText(LoginActivity.this, "登录成功", Toast.LENGTH_LONG).show();
                                         //保存username和密码
-                                        if (name_view.getText().toString().trim().equals("admin")) {
+
                                             Map<String, Object> map = new HashMap<String, Object>();
                                             map.put("username", name_view.getText().toString().trim());
                                             map.put("password", pwd_view.getText().toString().trim());
                                             service.saveSharedPreferences("login", map);
-                                        }
+
                                         //
                                         Intent in = new Intent(LoginActivity.this,MainActivity.class);
                                         startActivity(in);
