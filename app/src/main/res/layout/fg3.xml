@@ -28,7 +28,8 @@
                     android:layout_width="5.0dp"
                     android:layout_height="5.0dp"
                     android:layout_alignParentRight="true"
-                    android:background="@drawable/shape_reddot" />
+                    android:background="@drawable/shape_reddot"
+                    android:visibility="invisible"/>
 
                 <TextView
                     android:id="@+id/tv_message"
@@ -39,7 +40,8 @@
                     android:gravity="right"
                     android:text="消息"
                     android:textColor="@color/white_pure"
-                    android:textSize="@dimen/text_size_16" />
+                    android:textSize="@dimen/text_size_16"
+                    android:visibility="invisible"/>
             </RelativeLayout>
             <com.origamiboat.wang.origamiboat.utils.circleimageview.CircleImageView
 

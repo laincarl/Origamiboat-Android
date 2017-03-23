@@ -83,7 +83,7 @@ public class DetailsActivity extends Activity {
         new Thread(new Runnable(){
             public void run() {
                 try{
-                    String requestUrl = com.origamiboat.wang.origamiboat.common.ServerWebRoot.getServerWebRoot()+"Support?username="+user_artical+"&filename="+filename+"&author="+author;
+                    String requestUrl = com.origamiboat.wang.origamiboat.common.ServerWebRoot.getServerWebRoot()+"SupportCheck?username="+user_artical+"&filename="+filename+"&author="+author;
                     java.net.URL url = new URL(requestUrl);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("POST");
@@ -145,7 +145,7 @@ public class DetailsActivity extends Activity {
                                 ((ImageView) findViewById(R.id.collection)).setImageResource(R.drawable.collection_checked);
                                 collectflag=1;
                             }else{
-                                Toast.makeText(DetailsActivity.this, jsonObj.msg, Toast.LENGTH_SHORT).show();
+                                //Toast.makeText(DetailsActivity.this, jsonObj.msg, Toast.LENGTH_SHORT).show();
                                 //Toast.makeText(DetailsActivity.this, "点赞失败", Toast.LENGTH_SHORT).show();
                             }
                         }
@@ -314,7 +314,7 @@ public class DetailsActivity extends Activity {
                             Gson g =new Gson();
                             ResponseJson jsonObj = g.fromJson(json, ResponseJson.class);
                             if(jsonObj.status==200){
-                                Toast.makeText(DetailsActivity.this, "点赞成功", Toast.LENGTH_SHORT).show();
+                                //Toast.makeText(DetailsActivity.this, "点赞成功", Toast.LENGTH_SHORT).show();
 
                             }else{
                                 //Toast.makeText(DetailsActivity.this, jsonObj.msg, Toast.LENGTH_SHORT).show();
@@ -360,7 +360,7 @@ public class DetailsActivity extends Activity {
                             Gson g =new Gson();
                             ResponseJson jsonObj = g.fromJson(json, ResponseJson.class);
                             if(jsonObj.status==200){
-                                Toast.makeText(DetailsActivity.this, "收藏成功", Toast.LENGTH_SHORT).show();
+                                //Toast.makeText(DetailsActivity.this, "收藏成功", Toast.LENGTH_SHORT).show();
 
                             }else{
                                 //Toast.makeText(DetailsActivity.this, jsonObj.msg, Toast.LENGTH_SHORT).show();

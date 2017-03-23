@@ -15,6 +15,7 @@ import com.google.gson.Gson;
 import com.origamiboat.wang.origamiboat.Model.ResponseJson;
 import com.origamiboat.wang.origamiboat.common.ServerWebRoot;
 import com.origamiboat.wang.origamiboat.data_storage.LoginService;
+import com.origamiboat.wang.origamiboat.utils.CheckNet;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -46,7 +47,11 @@ public class LoginActivity extends Activity {
         login.setOnClickListener(new View.OnClickListener(){
 
             public void onClick(View v) {
-
+                if(!CheckNet.isNetaAvailable(LoginActivity.this))
+                {
+                    Toast.makeText(LoginActivity.this,"请检查网络状态", Toast.LENGTH_LONG).show();
+                    return;
+                }
                 final String username = name_view.getText().toString();
                 final String password = pwd_view.getText().toString();
                 new Thread(new Runnable(){

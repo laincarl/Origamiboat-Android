@@ -41,6 +41,8 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.display.FadeInBitmapDisplayer;
 import com.origamiboat.wang.origamiboat.common.ServerWebRoot;
 import com.origamiboat.wang.origamiboat.data_storage.LoginService;
+import com.origamiboat.wang.origamiboat.utils.CheckNet;
+import com.origamiboat.wang.origamiboat.utils.SysApplication;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -49,6 +51,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -109,6 +112,11 @@ public class AccountActivity extends Activity {
 
             @Override
             public void onClick(View v) {
+                if(!CheckNet.isNetaAvailable(AccountActivity.this))
+                {
+                    Toast.makeText(AccountActivity.this,"请检查网络状态", Toast.LENGTH_LONG).show();
+                    return;
+                }
                 //权限申请
                 if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP){
                 if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
@@ -129,12 +137,17 @@ public class AccountActivity extends Activity {
             @Override
             public void onClick(View v) {
 
-                SharedPreferences sp_user = getSharedPreferences("sp_user", Context.MODE_PRIVATE);
-                sp_user.edit().remove("login");
+                Map<String, Object> map = new HashMap<String, Object>();
+                map.put("username", "");
+                map.put("password", "");
+                service_new.saveSharedPreferences("login", map);
 
-                sp_user.edit().commit();
-
-
+                //finish掉mainactivity
+                SysApplication.getInstance().exit();
+                Intent intent = new Intent(AccountActivity.this, LoginActivity.class);
+                startActivity(intent);
+                //进入登陆界面后finish当前界面
+                finish();
             }
         });
     //创建默认的ImageLoader配置参数
@@ -142,7 +155,6 @@ public class AccountActivity extends Activity {
     imageLoader = ImageLoader.getInstance();
 //
     options = new DisplayImageOptions.Builder()
-
             .showImageOnLoading(null)//加载过程中显示的图片
 
                 .showImageForEmptyUri(null)//加载内容为空显示的图片

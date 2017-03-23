@@ -13,6 +13,7 @@ import android.widget.Toast;
 import com.google.gson.Gson;
 import com.origamiboat.wang.origamiboat.Model.ResponseJson;
 import com.origamiboat.wang.origamiboat.common.*;
+import com.origamiboat.wang.origamiboat.utils.CheckNet;
 
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -37,7 +38,11 @@ public class RegisterActivity extends Activity {
         confirm_reg.setOnClickListener(new View.OnClickListener(){
 
             public void onClick(View v) {
-
+                if(!CheckNet.isNetaAvailable(RegisterActivity.this))
+                {
+                    Toast.makeText(RegisterActivity.this,"请检查网络状态", Toast.LENGTH_LONG).show();
+                    return;
+                }
                 final String username = reg_name.getText().toString();
                 final String password = reg_pwd.getText().toString();
                 new Thread(new Runnable(){

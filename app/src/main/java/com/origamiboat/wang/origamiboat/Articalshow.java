@@ -1,12 +1,10 @@
 package com.origamiboat.wang.origamiboat;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.os.Bundle;
-import android.os.Handler;
-import android.support.v4.app.Fragment;
 import android.view.ContextMenu;
 import android.view.LayoutInflater;
 import android.view.MenuItem;
@@ -23,8 +21,11 @@ import com.google.gson.Gson;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.display.FadeInBitmapDisplayer;
+import com.origamiboat.wang.origamiboat.DetailsActivity;
 import com.origamiboat.wang.origamiboat.Model.ResponseJson;
+import com.origamiboat.wang.origamiboat.R;
 import com.origamiboat.wang.origamiboat.common.ServerWebRoot;
+import com.origamiboat.wang.origamiboat.info;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
@@ -34,25 +35,28 @@ import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /**
- * Created by wang on 2016/7/14 0014.
+ * Created by wang on 2017/3/23.
  */
-public class Fragment1 extends android.support.v4.app.Fragment {
+public class Articalshow extends Activity {
     ListView listView;  //声明一个ListView对象
     String str = "";
     private List<info> mlistInfo = new ArrayList<info>();  //声明一个list，动态存储要显示的信息
     private ImageLoader imageLoader;
     private DisplayImageOptions options;
     String url;
+    String username="";
+    String type="";
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fg1, container, false);
-        listView = (ListView) view.findViewById(R.id.listview);    //将listView与布局对象关联
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.fg1);
+        listView = (ListView)findViewById(R.id.listview);    //将listView与布局对象关联
+        Bundle extras = getIntent().getExtras();
+        username =extras.getString("username");
+        type =extras.getString("type");
         //创建默认的ImageLoader配置参数
 
         imageLoader = ImageLoader.getInstance();
@@ -74,7 +78,7 @@ public class Fragment1 extends android.support.v4.app.Fragment {
         new Thread(new Runnable() {
             public void run() {
                 try {
-                    String requestUrl = ServerWebRoot.getServerWebRoot() + "TransformArtical?type="+"all";
+                    String requestUrl = ServerWebRoot.getServerWebRoot() + "TransformArtical?username="+username+"&type="+type;
                     URL url = new URL(requestUrl);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setConnectTimeout(3000);//设置连接超时时间3s
@@ -90,7 +94,7 @@ public class Fragment1 extends android.support.v4.app.Fragment {
                     }
 
                     final String json = new String(out.toByteArray(), "UTF-8");
-                    getActivity().runOnUiThread(new Runnable() {
+                    runOnUiThread(new Runnable() {
                         public void run() {
                             Gson g = new Gson();
                             ResponseJson jsonObj = g.fromJson(json, ResponseJson.class);
@@ -101,8 +105,8 @@ public class Fragment1 extends android.support.v4.app.Fragment {
                                 setInfo();  //给信息赋值函数，用来测试
                                 listView.setAdapter(new ListViewAdapter(mlistInfo));
                             } else {
-                                Toast.makeText(getActivity(), jsonObj.msg, Toast.LENGTH_SHORT).show();
-                                Toast.makeText(getActivity(), "从服务器获取数据失败", Toast.LENGTH_SHORT).show();
+                                //Toast.makeText(Articalshow.this, jsonObj.msg, Toast.LENGTH_SHORT).show();
+                                //Toast.makeText(Articalshow.this, "从服务器获取数据失败", Toast.LENGTH_SHORT).show();
                             }
                         }
                     });
@@ -130,7 +134,7 @@ public class Fragment1 extends android.support.v4.app.Fragment {
                 Intent intent = new Intent();
                 intent.putExtra("Link", infoLink);
                 intent.putExtra("Title",infoTitle);
-                intent.setClass(getActivity().getApplicationContext(), DetailsActivity.class);//fragment获取intent
+                intent.setClass(Articalshow.this.getApplicationContext(), DetailsActivity.class);//fragment获取intent
                 startActivity(intent);
             }
         });
@@ -144,7 +148,7 @@ public class Fragment1 extends android.support.v4.app.Fragment {
                 //conMenu.add(0, 2, 2, "条目三");
             }
         });
-        return view;
+
     }
 
     //长按菜单处理函数
@@ -155,11 +159,11 @@ public class Fragment1 extends android.support.v4.app.Fragment {
                 //Toast.makeText(MainActivity.this, "你点击了条目一",Toast.LENGTH_SHORT).show();
                 return true;
             case 1:
-                Toast.makeText(getActivity(), "你点击了条目二", Toast.LENGTH_SHORT).show();
+                Toast.makeText(Articalshow.this, "你点击了条目二", Toast.LENGTH_SHORT).show();
 
                 return true;
             case 2:
-                Toast.makeText(getActivity(), "你点击了条目三", Toast.LENGTH_SHORT).show();
+                Toast.makeText(Articalshow.this, "你点击了条目三", Toast.LENGTH_SHORT).show();
                 return true;
         }
         return false;
@@ -193,8 +197,7 @@ public class Fragment1 extends android.support.v4.app.Fragment {
 
         //绘制Item的函数
         private View makeItemView(String strTitle, String strTime, String strLink, int resId) {
-            LayoutInflater inflater = (LayoutInflater) getActivity()
-                    .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+            LayoutInflater inflater = (LayoutInflater)Articalshow.this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
             // 使用View的对象itemView与R.layout.item关联
             View itemView = inflater.inflate(R.layout.list_item, null);
@@ -270,7 +273,7 @@ public class Fragment1 extends android.support.v4.app.Fragment {
     public String read() {
         String content = "";
         try {
-            FileInputStream inputStream = getActivity().openFileInput("ss.txt");
+            FileInputStream inputStream = Articalshow.this.openFileInput("ss.txt");
             byte[] bytes = new byte[1024];
             ByteArrayOutputStream arrayOutputStream = new ByteArrayOutputStream();
             while (inputStream.read(bytes) != -1) {

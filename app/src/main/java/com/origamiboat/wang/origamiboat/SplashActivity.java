@@ -35,9 +35,11 @@ public class SplashActivity extends Activity {
         setContentView(R.layout.splash);
         service = new LoginService(this);
         map = service.getSharePreference("login");//提取数据，第一次进来的时候要读文件
+        //Toast.makeText(SplashActivity.this, map.get("username").toString(), Toast.LENGTH_SHORT).show();
+        //Toast.makeText(SplashActivity.this, map.get("password").toString(), Toast.LENGTH_SHORT).show();
         if (map != null && !map.isEmpty()) {
 
-            if(map.get("username").toString()!=""&&map.get("password").toString()!="")
+            if(!map.get("username").toString().trim().equals("")&&!map.get("password").toString().trim().equals(""))
                 new Thread(new Runnable(){
                     public void run() {
                         try{
@@ -59,6 +61,7 @@ public class SplashActivity extends Activity {
                             final String json  = new String (out.toByteArray(),"UTF-8");
                             runOnUiThread(new Runnable() {
                                 public void run(){
+
                                     Gson g =new Gson();
                                     ResponseJson jsonObj = g.fromJson(json, ResponseJson.class);
                                     if(jsonObj.status==200){
@@ -111,6 +114,7 @@ else{
                 @Override
                 public void run() {
                     // TODO Auto-generated method stub
+
                     Intent mainIntent = new Intent(SplashActivity.this,LoginActivity.class);
                     SplashActivity.this.startActivity(mainIntent);//跳转到MainActivity
                     SplashActivity.this.finish();//结束SplashActivity

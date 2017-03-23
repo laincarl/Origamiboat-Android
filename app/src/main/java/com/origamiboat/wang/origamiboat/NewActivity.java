@@ -2,6 +2,7 @@ package com.origamiboat.wang.origamiboat;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -19,6 +20,7 @@ import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
+import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -29,6 +31,7 @@ import com.loopj.android.http.RequestParams;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.origamiboat.wang.origamiboat.common.ServerWebRoot;
 import com.origamiboat.wang.origamiboat.data_storage.LoginService;
+import com.origamiboat.wang.origamiboat.utils.CheckNet;
 import com.origamiboat.wang.origamiboat.utils.richtext.RichEditor;
 
 import java.io.BufferedWriter;
@@ -47,17 +50,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class NewActivity extends Activity {
+    private static final String UPLOAD_URL = ServerWebRoot.getServerWebRoot() + "UploadArtical";
+    private static String user_artical;
     final private int REQUEST_CODE_ASK_PERMISSIONS = 123;
-    private RichEditor mEditor;
-    private TextView mPreview;
     EditText articleTitle;
     String titlestr = "";
     String date_str = "";
     String filerootdir = Environment.getExternalStorageDirectory() + "/Origamiboat/";
-    private static final String UPLOAD_URL = ServerWebRoot.getServerWebRoot() + "UploadArtical";
-    private static String user_artical;
-    private LoginService service_new;
     Map<String, ?> map_new = null;
+    private RichEditor mEditor;
+    private TextView mPreview;
+    private LoginService service_new;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +73,7 @@ public class NewActivity extends Activity {
             user_artical = map_new.get("username").toString();
 
         }
+
         articleTitle = (EditText) findViewById(R.id.articleTitle);
         mEditor = (RichEditor) findViewById(R.id.editor);
         mEditor.setEditorHeight(200);
@@ -223,15 +227,14 @@ public class NewActivity extends Activity {
             public void onClick(View v) {
                 //mEditor.insertImage("file:///android_asset/ic3.png","dachshund");
                 //权限申请
-                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     if (checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
                         requestPermissions(
                                 new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CODE_ASK_PERMISSIONS);
                     } else {
                         gallery();
                     }
-                }
-                else {
+                } else {
                     gallery();
                 }
             }
@@ -242,28 +245,31 @@ public class NewActivity extends Activity {
             @Override
             public void onClick(View v) {
                 //Toast.makeText(NewActivity.this, mPreview.getText(), Toast.LENGTH_LONG).show();
-
+                if (!CheckNet.isNetaAvailable(NewActivity.this)) {
+                    Toast.makeText(NewActivity.this, "请检查网络状态", Toast.LENGTH_LONG).show();
+                    return;
+                }
                 titlestr = articleTitle.getText().toString();
                 if (!articleTitle.getText().toString().trim().equals("")) {
                     String areastr = mPreview.getText().toString();
                     SimpleDateFormat sDateFormat = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");
                     date_str = sDateFormat.format(new java.util.Date());
                     String done = replaceImgSrc(areastr);
-                    Toast.makeText(NewActivity.this, done, Toast.LENGTH_LONG).show();
-                    String start="<!DOCTYPE html>\n" +
+                    //Toast.makeText(NewActivity.this, done, Toast.LENGTH_LONG).show();
+                    String start = "<!DOCTYPE html>\n" +
                             "<html>\n" +
                             "<head>\n" +
                             "<meta charset=\"utf-8\">\n" +
                             "\t<title></title>\n" +
                             "</head>\n" +
                             "<body>";
-                    String end="\n</body>\n" +
+                    String end = "\n</body>\n" +
                             "</html>";
-                    done=start+done+end;
+                    done = start + done + end;
                     //Toast.makeText(NewActivity.this,done, Toast.LENGTH_SHORT).show();
-                    saveFile(done,user_artical + "_" + titlestr + "_" + date_str + ".html");
+                    saveFile(done, user_artical + "_" + titlestr + "_" + date_str + ".html");
                     //上传html
-                    uploadFile(filerootdir+user_artical + "_" + titlestr + "_" + date_str + ".html");
+                    uploadFile(filerootdir + user_artical + "_" + titlestr + "_" + date_str + ".html", 2);
 
                 } else {
                     Toast.makeText(NewActivity.this, "请输入标题", Toast.LENGTH_SHORT).show();
@@ -348,7 +354,20 @@ public class NewActivity extends Activity {
         return cursor.getString(column_index);
     }
 
-    public void uploadFile(String imgPathStr) {
+    public void uploadFile(String imgPathStr, final int mode) {
+        final ProgressDialog waitdialog = new ProgressDialog(NewActivity.this);
+        waitdialog.setTitle("等待");
+        //waitdialog.setMessage("上传中...");
+        //Toast.makeText(NewActivity.this,mode, Toast.LENGTH_LONG).show();
+        if (mode == 2)
+            waitdialog.setMessage("正在上传文字...");
+        else {
+            waitdialog.setMessage("正在上传图片...");
+        }
+        waitdialog.setIndeterminate(true);
+        waitdialog.setCancelable(false);
+        waitdialog.show();
+
         // 手机端要上传的文件的路径
         String filePath = imgPathStr;
 
@@ -358,7 +377,6 @@ public class NewActivity extends Activity {
         try {
             param.put("file", new File(filePath));
             param.put("content", "wang");
-
             httpClient.post(UPLOAD_URL, param, new AsyncHttpResponseHandler() {
                 @Override
                 public void onStart() {
@@ -369,7 +387,10 @@ public class NewActivity extends Activity {
                 public void onSuccess(String arg0) {
                     super.onSuccess(arg0);
                     if (arg0.equals("success")) {
-                        //Toast.makeText(NewActivity.this, "上传成功！", Toast.LENGTH_LONG).show();
+                        if (mode == 2) {
+                            Toast.makeText(NewActivity.this, "上传成功！", Toast.LENGTH_LONG).show();
+                            waitdialog.dismiss();
+                        }
                     }
                 }
 
@@ -442,7 +463,8 @@ public class NewActivity extends Activity {
                     //复制图片的一个文件
                     copyFile(str_src, filerootdir + user_artical + "_" + titlestr + "_" + date_str + "_" + k + ".jpg");
                     //上传图片文件
-                    uploadFile(filerootdir + user_artical + "_" + titlestr + "_" + date_str + "_" + k + ".jpg");
+
+                    uploadFile(filerootdir + user_artical + "_" + titlestr + "_" + date_str + "_" + k + ".jpg", 1);
 
                     //System.out.println(str_src);
                     //开始替换图片src
@@ -505,10 +527,10 @@ public class NewActivity extends Activity {
     }
 
     //写文件
-    public void saveFile(String str,String filename) {
+    public void saveFile(String str, String filename) {
         String filePath = null;
 
-        filePath = filerootdir+filename;
+        filePath = filerootdir + filename;
         try {
             File file = new File(filePath);
             if (!file.exists()) {
