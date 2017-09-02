@@ -4,9 +4,21 @@ package com.origamiboat.wang.origamiboat;
 
 import android.app.Activity;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.request.FutureTarget;
+import com.google.gson.Gson;
+import com.origamiboat.wang.origamiboat.Model.ResponseJson;
+import com.origamiboat.wang.origamiboat.common.ServerWebRoot;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
 
 /**
  * Created by xinxin on 16/4/18.
@@ -31,5 +43,9 @@ public class ImageActivity extends Activity {
         //Log.i("TAG", BASE_PATH + getIntent().getStringExtra("image"));
         Glide.with(ImageActivity.this).load(getIntent().getStringExtra("image"))
                 .into(show_img);
+
+
+
     }
+
 }

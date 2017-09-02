@@ -105,7 +105,19 @@ public class SplashActivity extends Activity {
                         }
                     }
                 }).start();
+else{
+                new Handler().postDelayed(new Runnable(){
 
+                    @Override
+                    public void run() {
+                        // TODO Auto-generated method stub
+
+                        Intent mainIntent = new Intent(SplashActivity.this,LoginActivity.class);
+                        SplashActivity.this.startActivity(mainIntent);//跳转到MainActivity
+                        SplashActivity.this.finish();//结束SplashActivity
+                    }
+                }, 500);//给postDelayed()方法传递延迟参数
+            }
 
         }
 else{

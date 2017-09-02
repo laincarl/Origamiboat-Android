@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.nostra13.universalimageloader.core.DisplayImageOptions;
@@ -40,7 +41,8 @@ public class Fragment3 extends android.support.v4.app.Fragment {
     TextView user_articalnum;
     TextView user_supportnum;
     TextView user_collectnum;
-    LinearLayout btn_userartical,btn_usercolllect,btn_usersupport;
+    TextView user_sortnum;
+    LinearLayout btn_userartical,btn_usercollect,btn_usersupport,btn_usersort,btn_collect;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
@@ -56,10 +58,14 @@ public class Fragment3 extends android.support.v4.app.Fragment {
         user_articalnum = (TextView) view.findViewById(R.id.user_articalnum);
         user_supportnum = (TextView) view.findViewById(R.id.user_supportnum);
         user_collectnum = (TextView) view.findViewById(R.id.user_collectnum);
+        user_sortnum = (TextView) view.findViewById(R.id.user_sortnum);
+
         button_about.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
+                Intent intent = new Intent();
+                intent.setClass(getActivity().getApplicationContext(), AboutActivity.class);//fragment获取intent
+                startActivity(intent);
             }
         });
         button_set = (LinearLayout) view.findViewById(R.id.button_set);
@@ -94,8 +100,8 @@ public class Fragment3 extends android.support.v4.app.Fragment {
                 startActivity(intent);
             }
         });
-        btn_usercolllect=(LinearLayout)view.findViewById(R.id.btn_usercollect);
-        btn_usercolllect.setOnClickListener(new View.OnClickListener() {
+        btn_usercollect=(LinearLayout)view.findViewById(R.id.btn_usercollect);
+        btn_usercollect.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent();
@@ -105,7 +111,17 @@ public class Fragment3 extends android.support.v4.app.Fragment {
                 startActivity(intent);
             }
         });
-
+        btn_collect=(LinearLayout)view.findViewById(R.id.btn_collect);
+        btn_collect.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent();
+                intent.putExtra("username", user_artical);
+                intent.putExtra("type", "usercollect");
+                intent.setClass(getActivity().getApplicationContext(), Articalshow.class);//fragment获取intent
+                startActivity(intent);
+            }
+        });
         new Thread(new Runnable() {
             public void run() {
                 try {
@@ -134,11 +150,13 @@ public class Fragment3 extends android.support.v4.app.Fragment {
                                 //String str = read();
 
                                 //Toast.makeText(MainActivity.this, str, Toast.LENGTH_LONG).show();
+                                //Toast.makeText(getActivity(), jsonObj.msg, Toast.LENGTH_LONG).show();
                                 String[] strarray = jsonObj.msg.split("[|]");
                                 if (strarray.length > 1) {
                                     user_articalnum.setText(strarray[0]);
                                     user_collectnum.setText(strarray[1]);
                                     user_supportnum.setText(strarray[2]);
+                                    user_sortnum.setText(strarray[3]);
                                 }
 
                             } else {

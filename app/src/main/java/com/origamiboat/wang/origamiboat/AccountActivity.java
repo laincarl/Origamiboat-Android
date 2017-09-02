@@ -23,6 +23,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.provider.MediaStore;
 
 import android.view.View;
@@ -142,12 +143,10 @@ public class AccountActivity extends Activity {
                 map.put("password", "");
                 service_new.saveSharedPreferences("login", map);
 
-                //finish掉mainactivity
+                Intent mainIntent = new Intent(AccountActivity.this,LoginActivity.class);
+                AccountActivity.this.startActivity(mainIntent);//跳转到MainActivity
                 SysApplication.getInstance().exit();
-                Intent intent = new Intent(AccountActivity.this, LoginActivity.class);
-                startActivity(intent);
-                //进入登陆界面后finish当前界面
-                finish();
+
             }
         });
     //创建默认的ImageLoader配置参数

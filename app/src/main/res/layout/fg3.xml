@@ -120,7 +120,7 @@
                     android:background="@color/black_margin" />
 
                 <LinearLayout
-                    android:id="@+id/ll_download"
+                    android:id="@+id/btn_collect"
                     android:layout_width="fill_parent"
                     android:layout_height="48.0dp"
                     android:background="@drawable/listview_selector"

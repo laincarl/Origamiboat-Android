@@ -104,6 +104,7 @@ public class MainActivity extends FragmentActivity implements View.OnClickListen
         if(view.getId()==R.id.found_layout) {
             Intent intent = new Intent(MainActivity.this, NewActivity.class);
             startActivity(intent);
+
             // 第一个参数是目标Activity进入时的动画，第二个参数是当前Activity退出时的动画
             overridePendingTransition(R.anim.slide_in, R.anim.activity_stay);
         }
@@ -129,7 +130,8 @@ public class MainActivity extends FragmentActivity implements View.OnClickListen
                     transaction.add(R.id.content, fg1);
                 } else {
                     // 如果MessageFragment不为空，则直接将它显示出来
-                    transaction.show(fg1);
+                    fg1 = new Fragment1();
+                    transaction.replace(R.id.content, fg1);
                 }
                 break;
 
@@ -159,7 +161,9 @@ public class MainActivity extends FragmentActivity implements View.OnClickListen
                     transaction.add(R.id.content, fg3);
                 } else {
                     // 如果MessageFragment不为空，则直接将它显示出来
-                    transaction.show(fg3);
+                    fg3 = new Fragment3();
+                    transaction.replace(R.id.content, fg3);
+                    //transaction.show(fg3);
                 }
                 break;
         }

@@ -52,7 +52,7 @@ public class Articalshow extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.fg1);
+        setContentView(R.layout.fg2);
         listView = (ListView)findViewById(R.id.listview);    //将listView与布局对象关联
         Bundle extras = getIntent().getExtras();
         username =extras.getString("username");
@@ -129,11 +129,15 @@ public class Articalshow extends Activity {
                 String infoLink = getObject.getLink();    //获取链接
                 infoLink = ServerWebRoot.getServerWebRoot() + "artical/" + infoLink;
                 String infoTitle=getObject.getTitle();
+                String latitude=getObject.getlatitude();
+                String longitude=getObject.getlongitude();
                 //Toast.makeText(getActivity(), "链接："+infoLink,Toast.LENGTH_SHORT).show();
                 //点击跳转
                 Intent intent = new Intent();
                 intent.putExtra("Link", infoLink);
                 intent.putExtra("Title",infoTitle);
+                intent.putExtra("Latitude", latitude);
+                intent.putExtra("Longitude",longitude);
                 intent.setClass(Articalshow.this.getApplicationContext(), DetailsActivity.class);//fragment获取intent
                 startActivity(intent);
             }
@@ -240,7 +244,7 @@ public class Articalshow extends Activity {
         String[] strarray = str.split("[|]");
 
         if (strarray.length > 1) {
-            for (int i = 0; i < strarray.length - 2; i++) {
+            for (int i = 0; i < strarray.length - 4; i++) {
                 //System.out.println(strarray.length);
                 //System.out.println(strarray[i]);
                 //information.setId(0);
@@ -250,10 +254,12 @@ public class Articalshow extends Activity {
                 strarray[i + 1]=strarray[i + 1].substring(0,10);
                 information.setTime(strarray[i + 1]);
                 information.setLink(strarray[i + 2]);
+                information.setlatitude(strarray[i + 3]);
+                information.setlongitude(strarray[i + 4]);
                 //System.out.println(strarray[i + 1]);
                 information.setAvatar(R.drawable.ssss);
                 mlistInfo.add(information); //将新的info对象加入到信息列表中
-                i = i + 2;
+                i = i + 4;
             }
 
 

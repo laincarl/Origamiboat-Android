@@ -26,9 +26,12 @@ android {
 dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     testCompile 'junit:junit:4.12'
+    compile 'com.github.arimorty:floatingsearchview:2.0.4'
     compile 'com.android.support:appcompat-v7:24.0.0'
     compile files('libs/gson-1.7.1.jar')
     compile files('libs/android-async-http-1.4.3.jar')
     compile files('libs/universal-image-loader-1.9.5.jar')
     compile 'com.github.bumptech.glide:glide:3.7.0'
+    compile 'com.amap.api:map3d-native:latest.integration'
+    compile 'com.amap.api:map3d:latest.integration'
 }

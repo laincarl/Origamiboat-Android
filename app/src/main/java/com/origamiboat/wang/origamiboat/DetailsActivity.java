@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -22,6 +23,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.gson.Gson;
+import com.loopj.android.http.AsyncHttpClient;
+import com.loopj.android.http.AsyncHttpResponseHandler;
+import com.loopj.android.http.RequestParams;
 import com.origamiboat.wang.origamiboat.ImageActivity;
 import com.origamiboat.wang.origamiboat.Model.ResponseJson;
 import com.origamiboat.wang.origamiboat.R;
@@ -30,9 +34,12 @@ import com.origamiboat.wang.origamiboat.data_storage.LoginService;
 import com.origamiboat.wang.origamiboat.utils.GoodView;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.StringTokenizer;
 
@@ -44,23 +51,27 @@ public class DetailsActivity extends Activity {
     private WebSettings webSettings;
     private JavaScriptInterface javascriptInterface;
     //private static String URL = "file:///android_asset/xx.html";
-    private static String URL ="";
+    private static String URL = "";
     TextView show_title;
     //public static final String BASE_PATH = "http://42.202.144.112:8080/";
     GoodView mGoodView;
     private static String user_artical;
     private LoginService service_new;
     Map<String, ?> map_new = null;
-    String author="";
-    String filename="";
-    int collectflag=0;
-    int supportflag=0;
+    String author = "";
+    String filename = "";
+    int collectflag = 0;
+    int supportflag = 0;
+    String latitude="";
+    String longitude="";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         mGoodView = new GoodView(this);
         Bundle extras = getIntent().getExtras();
-        URL =extras.getString("Link");
+        URL = extras.getString("Link");
+        latitude = extras.getString("Latitude");
+        longitude = extras.getString("Longitude");
         //Toast.makeText(DetailsActivity.this, URL, Toast.LENGTH_SHORT).show();
         setContentView(R.layout.activity_details);
         service_new = new LoginService(this);
@@ -70,88 +81,89 @@ public class DetailsActivity extends Activity {
             user_artical = map_new.get("username").toString();
 
         }
-        int startindex=0;
-        int endindex=0;
-        startindex=URL.lastIndexOf("/")+1;
+        int startindex = 0;
+        int endindex = 0;
+        startindex = URL.lastIndexOf("/") + 1;
 
-        filename=URL.substring(startindex);
-        endindex=filename.indexOf("_");
-        author=filename.substring(0,endindex);
+        filename = URL.substring(startindex);
+        endindex = filename.indexOf("_");
+        author = filename.substring(0, endindex);
         mWebView = (WebView) findViewById(R.id.webView);
-        show_title=(TextView)findViewById(R.id.show_title);
+        show_title = (TextView) findViewById(R.id.show_title);
         show_title.setText(extras.getString("Title"));
-        new Thread(new Runnable(){
+        new Thread(new Runnable() {
             public void run() {
-                try{
-                    String requestUrl = com.origamiboat.wang.origamiboat.common.ServerWebRoot.getServerWebRoot()+"SupportCheck?username="+user_artical+"&filename="+filename+"&author="+author;
+                try {
+                    String requestUrl = com.origamiboat.wang.origamiboat.common.ServerWebRoot.getServerWebRoot() + "SupportCheck?username=" +java.net.URLEncoder.encode(user_artical)  + "&filename=" + java.net.URLEncoder.encode(filename) + "&author=" + java.net.URLEncoder.encode(author);
                     java.net.URL url = new URL(requestUrl);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("POST");
                     InputStream in = conn.getInputStream();
                     ByteArrayOutputStream out = new ByteArrayOutputStream();
                     byte[] buf = new byte[1024];
-                    while(true){
-                        int len = in .read(buf);
-                        if(len==-1) break;
-                        out.write(buf,0,len);
+                    while (true) {
+                        int len = in.read(buf);
+                        if (len == -1) break;
+                        out.write(buf, 0, len);
                     }
 
-                    final String json  = new String (out.toByteArray(),"UTF-8");
+                    final String json = new String(out.toByteArray(), "UTF-8");
 
                     runOnUiThread(new Runnable() {
-                        public void run(){
-                            Gson g =new Gson();
+                        public void run() {
+                            Gson g = new Gson();
                             ResponseJson jsonObj = g.fromJson(json, ResponseJson.class);
-                            if(jsonObj.status==200){
+                            if (jsonObj.status == 200) {
                                 //Toast.makeText(DetailsActivity.this, "点赞成功", Toast.LENGTH_SHORT).show();
                                 ((ImageView) findViewById(R.id.good)).setImageResource(R.drawable.good_checked);
-                                supportflag=1;
-                            }else{
+                                supportflag = 1;
+                                //
+                            } else {
                                 //Toast.makeText(DetailsActivity.this, jsonObj.msg, Toast.LENGTH_SHORT).show();
                                 //Toast.makeText(DetailsActivity.this, "点赞失败", Toast.LENGTH_SHORT).show();
                             }
                         }
                     });
 
-                }catch(Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
         }).start();
-        new Thread(new Runnable(){
+        new Thread(new Runnable() {
             public void run() {
-                try{
-                    String requestUrl = com.origamiboat.wang.origamiboat.common.ServerWebRoot.getServerWebRoot()+"CollectCheck?username="+user_artical+"&filename="+filename;
+                try {
+                    String requestUrl = com.origamiboat.wang.origamiboat.common.ServerWebRoot.getServerWebRoot() + "CollectCheck?username=" +java.net.URLEncoder.encode(user_artical)  + "&filename=" + java.net.URLEncoder.encode(filename);
                     java.net.URL url = new URL(requestUrl);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("POST");
                     InputStream in = conn.getInputStream();
                     ByteArrayOutputStream out = new ByteArrayOutputStream();
                     byte[] buf = new byte[1024];
-                    while(true){
-                        int len = in .read(buf);
-                        if(len==-1) break;
-                        out.write(buf,0,len);
+                    while (true) {
+                        int len = in.read(buf);
+                        if (len == -1) break;
+                        out.write(buf, 0, len);
                     }
 
-                    final String json  = new String (out.toByteArray(),"UTF-8");
+                    final String json = new String(out.toByteArray(), "UTF-8");
 
                     runOnUiThread(new Runnable() {
-                        public void run(){
-                            Gson g =new Gson();
+                        public void run() {
+                            Gson g = new Gson();
                             ResponseJson jsonObj = g.fromJson(json, ResponseJson.class);
-                            if(jsonObj.status==200){
+                            if (jsonObj.status == 200) {
                                 //Toast.makeText(DetailsActivity.this, "点赞成功", Toast.LENGTH_SHORT).show();
                                 ((ImageView) findViewById(R.id.collection)).setImageResource(R.drawable.collection_checked);
-                                collectflag=1;
-                            }else{
+                                collectflag = 1;
+                            } else {
                                 //Toast.makeText(DetailsActivity.this, jsonObj.msg, Toast.LENGTH_SHORT).show();
                                 //Toast.makeText(DetailsActivity.this, "点赞失败", Toast.LENGTH_SHORT).show();
                             }
                         }
                     });
 
-                }catch(Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -159,7 +171,7 @@ public class DetailsActivity extends Activity {
         initData();
     }
 
-    @SuppressLint({ "JavascriptInterface", "SetJavaScriptEnabled" })
+    @SuppressLint({"JavascriptInterface", "SetJavaScriptEnabled"})
     private void initData() {
         javascriptInterface = new JavaScriptInterface(this);
         webSettings = mWebView.getSettings();
@@ -183,7 +195,6 @@ public class DetailsActivity extends Activity {
         mWebView.loadUrl(URL);
 
     }
-
 
 
     private class MyWebViewClient extends WebViewClient {
@@ -285,45 +296,47 @@ public class DetailsActivity extends Activity {
     }
 
     public void good(View view) {
-        if(supportflag==1){
+        //Toast.makeText(DetailsActivity.this,Integer.toString(supportflag),Toast.LENGTH_LONG).show();
+
+        ((ImageView) view).setImageResource(R.drawable.good_checked);
+        if (supportflag == 1) {
             return;
         }
-        ((ImageView) view).setImageResource(R.drawable.good_checked);
-
+        supportflag=1;
         mGoodView.setText("+1");
         //Toast.makeText(DetailsActivity.this,author+"|"+user_artical+"|"+filename,Toast.LENGTH_LONG).show();
-        new Thread(new Runnable(){
+        new Thread(new Runnable() {
             public void run() {
-                try{
-                    String requestUrl = com.origamiboat.wang.origamiboat.common.ServerWebRoot.getServerWebRoot()+"Support?username="+user_artical+"&filename="+filename+"&author="+author;
+                try {
+                    String requestUrl = com.origamiboat.wang.origamiboat.common.ServerWebRoot.getServerWebRoot() + "Support?username=" + user_artical + "&filename=" + filename + "&author=" + author;
                     java.net.URL url = new URL(requestUrl);
                     HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                     conn.setRequestMethod("POST");
                     InputStream in = conn.getInputStream();
                     ByteArrayOutputStream out = new ByteArrayOutputStream();
                     byte[] buf = new byte[1024];
-                    while(true){
-                        int len = in .read(buf);
-                        if(len==-1) break;
-                        out.write(buf,0,len);
+                    while (true) {
+                        int len = in.read(buf);
+                        if (len == -1) break;
+                        out.write(buf, 0, len);
                     }
 
-                    final String json  = new String (out.toByteArray(),"UTF-8");
+                    final String json = new String(out.toByteArray(), "UTF-8");
                     runOnUiThread(new Runnable() {
-                        public void run(){
-                            Gson g =new Gson();
+                        public void run() {
+                            Gson g = new Gson();
                             ResponseJson jsonObj = g.fromJson(json, ResponseJson.class);
-                            if(jsonObj.status==200){
+                            if (jsonObj.status == 200) {
                                 //Toast.makeText(DetailsActivity.this, "点赞成功", Toast.LENGTH_SHORT).show();
 
-                            }else{
+                            } else {
                                 //Toast.makeText(DetailsActivity.this, jsonObj.msg, Toast.LENGTH_SHORT).show();
                                 Toast.makeText(DetailsActivity.this, "点赞失败", Toast.LENGTH_SHORT).show();
                             }
                         }
                     });
 
-                }catch(Exception e){
+                } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
@@ -333,52 +346,57 @@ public class DetailsActivity extends Activity {
 
 
     public void collection(View view) {
-        if(collectflag==1){
+        if (collectflag == 1) {
             return;
         }
+
         ((ImageView) view).setImageResource(R.drawable.collection_checked);
+
         mGoodView.setTextInfo("收藏成功", Color.parseColor("#f66467"), 12);
-        new Thread(new Runnable(){
-            public void run() {
-                try{
-                    String requestUrl = com.origamiboat.wang.origamiboat.common.ServerWebRoot.getServerWebRoot()+"Collect?username="+user_artical+"&filename="+filename;
-                    java.net.URL url = new URL(requestUrl);
-                    HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                    conn.setRequestMethod("POST");
-                    InputStream in = conn.getInputStream();
-                    ByteArrayOutputStream out = new ByteArrayOutputStream();
-                    byte[] buf = new byte[1024];
-                    while(true){
-                        int len = in .read(buf);
-                        if(len==-1) break;
-                        out.write(buf,0,len);
-                    }
+        collectflag=1;
+        String requestUrl = com.origamiboat.wang.origamiboat.common.ServerWebRoot.getServerWebRoot() + "Collect";
+        AsyncHttpClient httpClient = new AsyncHttpClient();
+        RequestParams param = new RequestParams();
 
-                    final String json  = new String (out.toByteArray(),"UTF-8");
-                    runOnUiThread(new Runnable() {
-                        public void run(){
-                            Gson g =new Gson();
-                            ResponseJson jsonObj = g.fromJson(json, ResponseJson.class);
-                            if(jsonObj.status==200){
-                                //Toast.makeText(DetailsActivity.this, "收藏成功", Toast.LENGTH_SHORT).show();
-
-                            }else{
-                                //Toast.makeText(DetailsActivity.this, jsonObj.msg, Toast.LENGTH_SHORT).show();
-                                Toast.makeText(DetailsActivity.this, "收藏失败", Toast.LENGTH_SHORT).show();
-                            }
-                        }
-                    });
-
-                }catch(Exception e){
-                    e.printStackTrace();
+            param.put("username", user_artical);
+            param.put("filename", filename);
+            param.put("latitude", latitude);
+            param.put("longitude",longitude);
+            httpClient.post(requestUrl, param, new AsyncHttpResponseHandler() {
+                @Override
+                public void onStart() {
+                    super.onStart();
                 }
-            }
-        }).start();
+
+                @Override
+                public void onSuccess(String arg0) {
+                    super.onSuccess(arg0);
+                    if (arg0.equals("success")) {
+
+                            Toast.makeText(DetailsActivity.this, "收藏成功！", Toast.LENGTH_LONG).show();
+
+                    }
+                }
+
+                @Override
+                public void onFailure(Throwable arg0, String arg1) {
+                    super.onFailure(arg0, arg1);
+                    Toast.makeText(DetailsActivity.this, "上传失败！", Toast.LENGTH_LONG).show();
+                }
+            });
+
+
         mGoodView.show(view);
     }
 
 
 
-}
+    public void position(View view) {
 
+        Intent intent = new Intent(DetailsActivity.this, MapActivity.class);
+        intent.putExtra("Latitude", latitude);
+        intent.putExtra("Longitude",longitude);
+        startActivity(intent);
+    }
+}
 

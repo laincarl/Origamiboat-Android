@@ -2,17 +2,23 @@ package com.origamiboat.wang.origamiboat;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.DownloadManager;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.Color;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
@@ -22,6 +28,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -42,9 +49,11 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.text.SimpleDateFormat;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -57,11 +66,16 @@ public class NewActivity extends Activity {
     String titlestr = "";
     String date_str = "";
     String filerootdir = Environment.getExternalStorageDirectory() + "/Origamiboat/";
+    ListView listView2;  //声明一个ListView对象
     Map<String, ?> map_new = null;
     private RichEditor mEditor;
     private TextView mPreview;
     private LoginService service_new;
-
+    private static final int PHOTO_REQUEST = 1;
+    private static final int CAMERA_REQUEST = 2;
+    private static final int PHOTO_CLIP = 3;
+    protected static final int CHOOSE_PICTURE = 1;
+    protected static final int TAKE_PICTURE = 0;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -232,10 +246,13 @@ public class NewActivity extends Activity {
                         requestPermissions(
                                 new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CODE_ASK_PERMISSIONS);
                     } else {
-                        gallery();
+                        //gallery();
+                        showChoosePicDialog();
+                        //mEditor.insertImage(Environment.getExternalStorageDirectory() + "/" + user_artical+".jpg", "dachshund");
                     }
                 } else {
-                    gallery();
+                    showChoosePicDialog();
+                    //gallery();
                 }
             }
         });
@@ -268,8 +285,39 @@ public class NewActivity extends Activity {
                     done = start + done + end;
                     //Toast.makeText(NewActivity.this,done, Toast.LENGTH_SHORT).show();
                     saveFile(done, user_artical + "_" + titlestr + "_" + date_str + ".html");
-                    //上传html
-                    uploadFile(filerootdir + user_artical + "_" + titlestr + "_" + date_str + ".html", 2);
+
+                    AlertDialog builder = new  AlertDialog.Builder(NewActivity.this)
+                            .setTitle("分类" )
+                            .setIcon(android.R.drawable.ic_dialog_info)
+                            .setSingleChoiceItems(new  String[] {"教程", "校园", "旅游","生活" },  0 ,
+                                    new  DialogInterface.OnClickListener() {
+                                        public   void  onClick(DialogInterface dialog,  int  which) {
+                                            //dialog.dismiss();
+                                            }
+                                    }
+                            )
+                            .setPositiveButton("上传" ,  new DialogInterface.OnClickListener(){
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    // TODO Auto-generated method stub
+                                    String mark = "" ;
+                                    for (int i = 0; i < 4; i++) {
+                                        if (listView2.getCheckedItemPositions().get(i)) {
+                                            mark += listView2.getAdapter().getItem(i);
+                                        }
+                                    }
+                                    mark = mark.substring(0, mark.length());
+                                   // Toast.makeText(NewActivity.this, mark, Toast.LENGTH_SHORT).show();
+
+                                    double output[]=getpoint();
+
+                                    //上传html
+                                    uploadFile(filerootdir + user_artical + "_" + titlestr + "_" + date_str + ".html", 2,mark,output);
+                                    dialog.dismiss();
+                                } })
+                            .setNegativeButton("取消" ,  null).create();
+                    listView2 = builder.getListView();
+                    builder.show();
 
                 } else {
                     Toast.makeText(NewActivity.this, "请输入标题", Toast.LENGTH_SHORT).show();
@@ -292,8 +340,7 @@ public class NewActivity extends Activity {
                 android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
         startActivityForResult(getImg, 1001);
     }
-
-
+/*
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         // TODO Auto-generated method stub
@@ -332,7 +379,7 @@ public class NewActivity extends Activity {
             }
         }
     }
-
+*/
     /**
      * 获取指定uri的本地绝对路径
      *
@@ -354,7 +401,7 @@ public class NewActivity extends Activity {
         return cursor.getString(column_index);
     }
 
-    public void uploadFile(String imgPathStr, final int mode) {
+    public void uploadFile(String imgPathStr, final int mode,String mark,double[] output) {
         final ProgressDialog waitdialog = new ProgressDialog(NewActivity.this);
         waitdialog.setTitle("等待");
         //waitdialog.setMessage("上传中...");
@@ -375,8 +422,12 @@ public class NewActivity extends Activity {
 
         RequestParams param = new RequestParams();
         try {
+
+            //Toast.makeText(NewActivity.this, mark, Toast.LENGTH_SHORT).show();
+            param.put("mark", mark);
             param.put("file", new File(filePath));
-            param.put("content", "wang");
+            param.put("latitude", Double.toString(output[0]));
+            param.put("longitude", Double.toString(output[1]));
             httpClient.post(UPLOAD_URL, param, new AsyncHttpResponseHandler() {
                 @Override
                 public void onStart() {
@@ -389,8 +440,17 @@ public class NewActivity extends Activity {
                     if (arg0.equals("success")) {
                         if (mode == 2) {
                             Toast.makeText(NewActivity.this, "上传成功！", Toast.LENGTH_LONG).show();
-                            waitdialog.dismiss();
+                            new Handler().postDelayed(new Runnable(){
+
+                                @Override
+                                public void run() {
+                                    // TODO Auto-generated method stub
+
+                                    NewActivity.this.finish();//结束SplashActivity
+                                }
+                            }, 2000);//给postDelayed()方法传递延迟参数
                         }
+                        waitdialog.dismiss();
                     }
                 }
 
@@ -464,7 +524,7 @@ public class NewActivity extends Activity {
                     copyFile(str_src, filerootdir + user_artical + "_" + titlestr + "_" + date_str + "_" + k + ".jpg");
                     //上传图片文件
 
-                    uploadFile(filerootdir + user_artical + "_" + titlestr + "_" + date_str + "_" + k + ".jpg", 1);
+                    uploadFile(filerootdir + user_artical + "_" + titlestr + "_" + date_str + "_" + k + ".jpg", 1,"",new double[2]);
 
                     //System.out.println(str_src);
                     //开始替换图片src
@@ -538,15 +598,6 @@ public class NewActivity extends Activity {
                 dir.mkdirs();
                 file.createNewFile();
             }
-
-
-           /* FileWriter fw = new FileWriter(filename);
-
-            PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(filename),"utf-8")));
-            out.write(str);
-            out.flush();
-            out.close();*/
-
             FileOutputStream outStream = new FileOutputStream(file);
 
             outStream.write(str.getBytes());
@@ -555,5 +606,182 @@ public class NewActivity extends Activity {
             e.printStackTrace();
         }
 
+    }
+
+
+
+
+
+    /**
+     * 显示修改头像的对话框
+     */
+    protected void showChoosePicDialog() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(this);
+        builder.setTitle("选择图片");
+        String[] items = { "拍照", "选择本地照片" };
+
+        builder.setItems(items, new DialogInterface.OnClickListener() {
+
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                // TODO Auto-generated method stub
+                switch (which) {
+                    case TAKE_PICTURE: // 拍照
+                        getPicFromCamera();
+
+                        break;
+
+                    case CHOOSE_PICTURE: // 选择本地照片
+                        getPicFromPhoto();
+                        break;
+                }
+            }
+        });
+        builder.create().show();
+
+    }
+
+
+    private void getPicFromPhoto() {
+        Intent intent = new Intent(Intent.ACTION_PICK, null);
+        intent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "image/*");
+        startActivityForResult(intent, PHOTO_REQUEST);
+        ImageLoader.getInstance().clearMemoryCache();//清除内存
+        ImageLoader.getInstance().clearDiskCache();//清除sd卡
+    }
+
+    private void getPicFromCamera() {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        // 下面这句指定调用相机拍照后的照片存储的路径
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(new File(Environment.getExternalStorageDirectory(), user_artical+".jpg")));
+        startActivityForResult(intent, CAMERA_REQUEST);
+        ImageLoader.getInstance().clearMemoryCache();//清除内存
+        ImageLoader.getInstance().clearDiskCache();//清除sd卡
+    }
+
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        // TODO Auto-generated method stub
+        super.onActivityResult(requestCode, resultCode, data);
+        switch (requestCode) {
+            case CAMERA_REQUEST:
+                switch (resultCode) {
+                    case -1:// -1表示拍照成功
+                        File file = new File(Environment.getExternalStorageDirectory() + "/" + user_artical+".jpg");
+                        if (file.exists()) {
+                            //photoClip(Uri.fromFile(file));
+                            SimpleDateFormat sDateFormat = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");
+                            String picname=sDateFormat.format(new java.util.Date());
+                            copyFile(Environment.getExternalStorageDirectory() + "/" + user_artical+".jpg", Environment.getExternalStorageDirectory() + "/" + picname+".jpg");
+                            mEditor.insertImage(Environment.getExternalStorageDirectory() + "/" + picname+".jpg", "dachshund");
+                        }
+
+                        break;
+                    default:
+                        break;
+                }
+                break;
+            case PHOTO_REQUEST:
+                if (data != null) {
+                    //photoClip(data.getData());
+
+                    SimpleDateFormat sDateFormat = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");
+                    String picname=sDateFormat.format(new java.util.Date());
+                    copyFile(getAbsoluteImagePath(data.getData()), Environment.getExternalStorageDirectory() + "/" + picname+".jpg");
+                    mEditor.insertImage(Environment.getExternalStorageDirectory() + "/" + picname+".jpg", "dachshund");
+                }
+                break;
+            case PHOTO_CLIP:
+                if (data != null) {
+                    Bundle extras = data.getExtras();
+                    if (extras != null) {
+                        Bitmap photo = extras.getParcelable("data");
+                       //将bitmap转换为File
+                        Bitmap.CompressFormat format = Bitmap.CompressFormat.JPEG;
+                        int quality = 100;
+                        OutputStream stream = null;
+                        SimpleDateFormat sDateFormat = new SimpleDateFormat("yyyy-MM-dd-hh-mm-ss");
+                        String picname=sDateFormat.format(new java.util.Date());
+                        try {
+
+                            stream = new FileOutputStream(Environment.getExternalStorageDirectory() + "/" + picname+".jpg");
+                        } catch (FileNotFoundException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }
+                        photo.compress(format, quality, stream);
+                        mEditor.insertImage(Environment.getExternalStorageDirectory() + "/" + picname+".jpg", "dachshund");
+                    }
+                }
+                break;
+            default:
+                break;
+        }
+
+    }
+
+    private void photoClip(Uri uri) {
+        // 调用系统中自带的图片剪裁
+        Intent intent = new Intent("com.android.camera.action.CROP");
+        intent.setDataAndType(uri, "image/*");
+        // 下面这个crop=true是设置在开启的Intent中设置显示的VIEW可裁剪
+        intent.putExtra("crop", "true");
+        // aspectX aspectY 是宽高的比例
+        intent.putExtra("aspectX", 1);
+        intent.putExtra("aspectY", 1);
+        // outputX outputY 是裁剪图片宽高
+        intent.putExtra("outputX", 800);
+        intent.putExtra("outputY", 800);
+        //intent.putExtra(MediaStore.EXTRA_OUTPUT, getTempUri());
+        intent.putExtra("outputFormat",Bitmap.CompressFormat.JPEG.toString());
+        intent.putExtra("return-data", true);
+        startActivityForResult(intent, PHOTO_CLIP);
+    }
+        LocationListener locationListener =  new LocationListener() {
+        @Override
+        public void onStatusChanged(String provider, int status, Bundle arg2) {
+        }
+        @Override
+        public void onProviderEnabled(String provider) {
+        }
+        @Override
+        public void onProviderDisabled(String provider) {
+        }
+        @Override
+        public void onLocationChanged(Location location) {
+        }
+    };
+    private double[] getpoint(){
+
+         LocationManager locationManager;
+         String locationProvider;
+        double[] output=new double[2];
+       output[0]=1.111111;
+        output[1]=1.111111;
+        //获取地理位置管理器
+        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        //获取所有可用的位置提供器
+        List<String> providers = locationManager.getProviders(true);
+        if(providers.contains(LocationManager.GPS_PROVIDER)){
+            //如果是GPS
+            locationProvider = LocationManager.GPS_PROVIDER;
+        }else if(providers.contains(LocationManager.NETWORK_PROVIDER)){
+            //如果是Network
+            locationProvider = LocationManager.NETWORK_PROVIDER;
+        }else{
+            Toast.makeText(this, "没有成功获取当前位置，使用软件默认位置！", Toast.LENGTH_SHORT).show();
+            return output;
+        }
+        //获取Location
+        Location location = locationManager.getLastKnownLocation(locationProvider);
+        if(location!=null){
+            //不为空,显示地理位置经纬度
+            output[0]=location.getLatitude();
+            output[1]=location.getLongitude();
+
+        }
+        return output;
     }
 }

@@ -5,8 +5,14 @@
     android:layout_marginTop="10.0dip"
     android:orientation="horizontal">
 
+
+
+    <View
+        android:layout_width="0.5dip"
+        android:layout_height="fill_parent"
+        android:background="@color/black_margin" />
     <LinearLayout
-        android:id="@+id/ll_comic_guess"
+        android:id="@+id/btn_usersort"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_weight="1.0"
@@ -15,7 +21,7 @@
         android:orientation="vertical">
 
         <TextView
-            android:id="@+id/tv_comic_guess_num"
+            android:id="@+id/user_sortnum"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="\ 26"
@@ -29,11 +35,6 @@
             android:textColor="@color/black_info_title"
             android:textSize="14.0sp" />
     </LinearLayout>
-
-    <View
-        android:layout_width="0.5dip"
-        android:layout_height="fill_parent"
-        android:background="@color/black_margin" />
 
     <LinearLayout
         android:id="@+id/btn_userartical"

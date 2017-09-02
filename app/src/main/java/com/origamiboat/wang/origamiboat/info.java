@@ -9,6 +9,8 @@ public class info {
     private String title;   //信息标题
     private String time; //时间
     private String link; //详细信息
+    private String latitude; //
+    private String longitude; //
     private int avatar; //图片ID
     private  String num;
 
@@ -27,7 +29,20 @@ public class info {
     public String getTitle() {
         return title;
     }
-
+    //标题
+    public void setlatitude(String latitude) {
+        this.latitude = latitude;
+    }
+    public String getlatitude() {
+        return latitude;
+    }
+    //标题
+    public void setlongitude(String longitude) {
+        this.longitude = longitude;
+    }
+    public String getlongitude() {
+        return longitude;
+    }
     //时间
     public void setTime(String info) {
         this.time = info;
